@@ -1,0 +1,122 @@
+World must contain a rectangle full of proper CELL_SIZEd blocks. Storage format: paletted PNG-8.
+Current colors:
+- white FFFFFF: ground space
+- black 000000: solid wall
+Currently world can't grow in size just to achieve minimal viable product.
+In future versions it would be nice to allocate new world layers and setup portal between them.
+It is better than generating one big world map.
+On low-populated servers people must meet each other in some reasonable amount of time.
+
+User database is simple sqlite.
+After death of all mobs user must be deleted from the database.
+To continue player should register again.
+
+Registering allocates new user base in random free point.
+
+Available resources:
+- energy
+
+Bot parts:
+- Worker (allows gathering/transporting energy, building structures, each part of this type increases gathering/building per tact, transporting capacity remains fixed though)
+- Movement (allows longer continuous movements, stamina improvement)
+- Melee (allows close combat, each part of this type increases damage)
+- Ranged (allows ranged combat, each part of this type increases damage)
+- Heal (allows healing, each part of this type increases healing rate)
+- Armor (increases protection)
+- Storage (allows transporting extra energy)
+- Life (allows longer life)
+
+Bot parameters:
+- Part configuration
+- HP
+- Max HP (computed from part configuration)
+- Lifetime (original value computed from part configuration, constantly decreases until 0)
+- Stamina
+- Max stamina (computed from part configuration)
+
+Bot sight range: 10 blocks. With wall occlusion.
+
+Possible actions:
+    Bot:
+        move(direction)
+        suicide()
+    WorkerBot:
+        gather(direction)  # take energy from
+        put(direction)  # put energy into
+        place_building(direction, building_type)
+        build(direction)  # build, convert energy into buildpoints
+    MeleeBot:
+        slay(direction)
+    RangedBot:
+        shoot(dx, dy)
+    HealBot:
+        heal(direction)
+    Spawner:
+        build_bot([part_type, part_type, ..])
+
+Building types:
+- Spawner (allows spawning bots, can use Extensions in 30 block radius)
+- Extension (allows spawning better bots)
+- Road (removes requirement of spending stamina while moving)
+- Wall
+- Watchtower (big range watcher, requires bot inside)
+- Radar (big range wall-through watcher, requires bot inside)
+
+Readonly properties:
+    # along with x and y:
+    # layer (future feature, some salted hash, showed differently for each player)
+    World:
+        time
+        my_bots (list of objects)
+        my_buildings (list of objects)
+    Watcher:
+        natural_map (numpy 2d array, only natural walls, invisible areas marked by special code)
+        energy_drops_around (list of readonly objects)
+        walls_around (numpy 2d array with hps, 0 means no object or invisible area)
+        roads_around (same as walls_around)
+        enemy_bots_around (list of readonly objects)
+        enemy_buildings_around(list of readonly objects)
+    Bot:
+        part_config
+        x (without sector logic, just absolute value relative to original spawn place)
+        y
+        hp (slowly fades when user is offline)
+        max_hp
+    MyBot(Bot, Watcher):
+        lifetime
+        stamina
+        max_stamina
+    EnemyBot(Bot):
+        playername
+    Building:
+        x
+        y
+        hp
+        max_hp
+    ConstructionSite(Building):
+        type (of building)
+        buildpoints (fill this with energy. slowly fades until 0)
+        cost (if buildpoints > cost, construction site becomes functional building)
+        # hp grows proportionally with buildpoints, until it reaches normal building max_hp
+        # when damaged, buildpoints remain unchanged, but hp stays affected (building will need repairing)
+    EnemyConstructionSite(Building):
+        playername
+    MyBuilding(Building, Watcher):
+        # hp slowly fades when user is offline
+    EnemyBuilding(Building):
+        playername
+    SpawnerBuilding(MyBuilding):
+        busy_until (null if not busy)
+        energy (used for making new bots)
+    ExtensionBuilding(MyBuilding):
+        energy (used for making new bots)
+    RoadBuilding(Building):
+    WallBuilding(Building):
+        # hp slowly fades even when user is ONline
+        # hp can be increased without limit by build()
+        # greater hp means greater natural hp fade, so there will be some optimum
+        # nobody owns these structures, enemies can repair and use them
+    EnergyDrop:
+        x
+        y
+        energy (slowly fades)
