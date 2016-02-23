@@ -1,72 +1,7 @@
-from enum import Enum
 from typing import Iterable, TypeVar
 import numpy
 
-
-class NaturalObjects(Enum):
-    energy_source = 1
-
-
-class BuildingTypes(Enum):
-    cons_site = 1
-    spawner = 2
-    extension = 3
-    radar = 4
-
-
-class BotParts(Enum):
-    # allows gathering/transporting energy, building structures
-    # each part of this type increases gathering/building per tact, transporting capacity remains fixed though
-    worker = 1
-
-    # allows longer continuous movements, stamina improvement
-    movement = 2
-
-    # allows close combat, each part of this type increases damage
-    melee = 3
-
-    # allows ranged combat, each part of this type increases damage
-    ranged = 4
-
-    # allows healing, each part of this type increases healing rate
-    heal = 5
-
-    # increases protection
-    armor = 6
-
-    # allows transporting extra energy
-    storage = 7
-
-    # allows longer life
-    life = 8
-
-
-class Direction(Enum):
-    north = 1
-    north_east = 2
-    east = 3
-    south_east = 4
-    south = 5
-    south_west = 6
-    west = 7
-    north_west = 8
-
-    up = 1
-    up_right = 2
-    right = 3
-    down_right = 4
-    down = 5
-    down_left = 6
-    left = 7
-    up_left = 8
-
-
-class NaturalMap(Enum):
-    unknown = 0  # or invisible
-    ground = 1
-    natural_wall = 2
-    artifical_wall = 3
-    road = 4
+from common.const import NaturalObjects, BuildingTypes, BotParts, Direction
 
 
 class Positionable:
@@ -162,20 +97,17 @@ class Watcher:
     def natural_map(self) -> numpy.array:
         pass
 
+    # health point of map objects (walls and roads)
+    @property
+    def natural_map_hp(self) -> numpy.array:
+        pass
+
     @property
     def energy_drops_around(self) -> Iterable[EnergyDrop]:
         pass
 
-    # 0 means no wall in this cell
-    # any value N>0 means there is a wall with N health points
     @property
-    def walls_around(self) -> numpy.array:
-        pass
-
-    # 0 means no road in this cell
-    # any value N>0 means there is a road with N health points
-    @property
-    def roads_around(self) -> numpy.array:
+    def natural_objects_around(self) -> Iterable[NaturalObjects]:
         pass
 
     @property
