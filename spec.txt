@@ -59,7 +59,6 @@ Building types:
 - Extension (allows spawning better bots)
 - Road (removes requirement of spending stamina while moving)
 - Wall
-- Watchtower (big range watcher, requires bot inside)
 - Radar (big range wall-through watcher, requires bot inside)
 
 Readonly properties:
@@ -82,7 +81,7 @@ Readonly properties:
         y
         hp (slowly fades when user is offline)
         max_hp
-    MyBot(Bot, Watcher):
+    MyBot(Bot, Watcher, EnergyStorage):
         lifetime
         stamina
         max_stamina
@@ -93,7 +92,7 @@ Readonly properties:
         y
         hp
         max_hp
-    ConstructionSite(Building):
+    MyConstructionSite(Building):
         type (of building)
         buildpoints (fill this with energy. slowly fades until 0)
         cost (if buildpoints > cost, construction site becomes functional building)
@@ -105,11 +104,14 @@ Readonly properties:
         # hp slowly fades when user is offline
     EnemyBuilding(Building):
         playername
-    SpawnerBuilding(MyBuilding):
+    EnergyStorage:
+        energy
+        max_energy
+    SpawnerBuilding(MyBuilding, EnergyStorage):
         busy_until (null if not busy)
-        energy (used for making new bots)
-    ExtensionBuilding(MyBuilding):
-        energy (used for making new bots)
+        # energy used for making new bots
+    ExtensionBuilding(MyBuilding, EnergyStorage):
+        # energy used for making new bots
     RoadBuilding(Building):
     WallBuilding(Building):
         # hp slowly fades even when user is ONline
