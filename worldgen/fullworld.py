@@ -3,7 +3,7 @@ from random import random, sample, randrange
 from .cellgen import make_cell, make_random_exits
 import numpy
 
-from common.const import Direction, WorldSize, NaturalMap
+from common.const import Direction, WorldSize, NaturalMap, DTypes
 
 
 def raze_maze_walls(maze, prob=0.5):
@@ -84,48 +84,57 @@ def setup_sources(cells):
     return result
 
 
-def render_generated_world(cells, width, height, sources=[]):
+def glue_parts_together(cells, cell_width, cell_height):
+    output = numpy.empty((WorldSize.cell * cell_width, WorldSize.cell * cell_height), dtype=DTypes.worldmap)
+    for xy, cell in cells.items():
+        ox, oy = xy[0] * WorldSize.cell, xy[1] * WorldSize.cell
+        output[ox:ox + WorldSize.cell, oy:oy + WorldSize.cell] = cell
+    return output
+
+
+def render_generated_world(cells, sources=[]):
     from PIL import Image, ImageDraw
 
-    GROUND_COLOR = (136, 136, 136)
-    GRID_COLOR = (153, 153, 153)
+    GROUND_COLOR = (80, 80, 80)
+    GRID_COLOR = (255, 255, 255, 10)
     WALL_COLOR = (0, 0, 0)
     SOURCE_COLOR = (255, 255, 0)
 
-    out = Image.new('RGB', (WorldSize.cell * width, WorldSize.cell * height))
+    out = Image.new('RGBA', (cells.shape[0], cells.shape[1]))
     draw = ImageDraw.Draw(out)
     draw.rectangle((
         0, 0,
-        WorldSize.cell * width, WorldSize.cell * height,
+        cells.shape[0], cells.shape[1],
     ), fill=GROUND_COLOR)
 
-    for y in range(height):
-        draw.line((0, y * WorldSize.cell, width * WorldSize.cell, y * WorldSize.cell), fill=GRID_COLOR)
-    for x in range(width):
-        draw.line((x * WorldSize.cell, 0, x * WorldSize.cell, height * WorldSize.cell), fill=GRID_COLOR)
-
-    for y in range(height):
-        for x in range(width):
-            cell = cells[(x, y)]
-            for cy in range(WorldSize.cell):
-                for cx in range(WorldSize.cell):
-                    if cell[cx, cy] != NaturalMap.natural_wall:
-                        continue
-                    out.putpixel((
-                        x * WorldSize.cell + cx,
-                        y * WorldSize.cell + cy,
-                    ), WALL_COLOR)
+    for y in range(cells.shape[1]):
+        for x in range(cells.shape[0]):
+            if cells[x, y] != NaturalMap.natural_wall:
+                continue
+            out.putpixel((x, y), WALL_COLOR)
 
     for x, y in sources:
         out.putpixel((x, y), SOURCE_COLOR)
 
-    return out
+    grid_layer = Image.new('RGBA', (cells.shape[0], cells.shape[1]))
+    grid_draw = ImageDraw.Draw(grid_layer)
+    for y in range(0, cells.shape[1], WorldSize.cell):
+        grid_draw.line((0, y, cells.shape[0], y), fill=GRID_COLOR)
+    for x in range(0, cells.shape[0], WorldSize.cell):
+        grid_draw.line((x, 0, x, cells.shape[1]), fill=GRID_COLOR)
+
+    return Image.alpha_composite(out, grid_layer)
+
+
+def generate_world(cell_width, cell_height):
+    cells = make_full_world(cell_width, cell_height)
+    sources = setup_sources(cells)
+    mp = glue_parts_together(cells, cell_width, cell_height)
+    return mp, sources
 
 
 if __name__ == '__main__':
-    width, height = 16, 16
-    cells = make_full_world(width, height)
-    sources = setup_sources(cells)
-    im = render_generated_world(cells, width, height, sources=sources)
+    wmap, sources = generate_world(16, 16)
+    im = render_generated_world(wmap, sources=sources)
     # im.show()
     im.save('map.png')
