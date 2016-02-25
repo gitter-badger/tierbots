@@ -76,6 +76,9 @@ class WorldSize:
     cell = 64
     corner_wall = 3
 
+    sources_per_cell = (2, 5)
+    source_min_border_offset = 1
+
 
 class Filenames:
     worldmap = 'world.npy'

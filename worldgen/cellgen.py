@@ -31,8 +31,8 @@ def ensure_range(value, a, b):
 
 def build_wall(cell):
     cell[:, 0] = NaturalMap.natural_wall
-    cell[WorldSize.cell - 1, :] = NaturalMap.natural_wall
-    cell[:, WorldSize.cell - 1] = NaturalMap.natural_wall
+    cell[-1, :] = NaturalMap.natural_wall
+    cell[:, -1] = NaturalMap.natural_wall
     cell[0, :] = NaturalMap.natural_wall
 
 
@@ -57,9 +57,9 @@ def apply_exits(cell, exits):
         if side == Direction.north:
             cell[a:b, 0] = NaturalMap.ground
         elif side == Direction.east:
-            cell[WorldSize.cell - 1, a:b] = NaturalMap.ground
+            cell[-1, a:b] = NaturalMap.ground
         elif side == Direction.south:
-            cell[a:b, WorldSize.cell - 1] = NaturalMap.ground
+            cell[a:b, -1] = NaturalMap.ground
         else:
             cell[0, a:b] = NaturalMap.ground
 
