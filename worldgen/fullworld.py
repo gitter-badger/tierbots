@@ -2,7 +2,7 @@ from .maze import genmaze_eller
 from random import random
 from .cellgen import make_cell, make_random_exits
 
-from common.const import Direction, WorldSize
+from common.const import Direction, WorldSize, NaturalMap
 
 
 def raze_maze_walls(maze, prob=0.5):
@@ -17,8 +17,6 @@ def raze_maze_walls(maze, prob=0.5):
 
 
 def make_full_world(width, height):
-    from PIL import Image, ImageDraw
-
     maze = genmaze_eller(width, height)
     raze_maze_walls(maze, 0.4)
 
@@ -47,6 +45,16 @@ def make_full_world(width, height):
 
             cells[(x, y)] = make_cell(exits=exits)
         print('{}%'.format(y * 100 // height))
+    return cells
+
+
+def setup_sources(cells):
+    for cell in cells.values():
+        x
+
+
+def render_generated_world(cells, width, height):
+    from PIL import Image, ImageDraw
 
     out = Image.new('RGB', (WorldSize.cell * width, WorldSize.cell * height))
     draw = ImageDraw.Draw(out)
@@ -65,7 +73,7 @@ def make_full_world(width, height):
             cell = cells[(x, y)]
             for cy in range(WorldSize.cell):
                 for cx in range(WorldSize.cell):
-                    if not cell[cx, cy]:
+                    if cell[cx, cy] != NaturalMap.natural_wall:
                         continue
                     out.putpixel((
                         x * WorldSize.cell + cx,
@@ -76,4 +84,6 @@ def make_full_world(width, height):
 
 
 if __name__ == '__main__':
-    make_full_world(16, 16)
+    width, height = 16, 16
+    cells = make_full_world(width, height)
+    render_generated_world(cells, width, height)

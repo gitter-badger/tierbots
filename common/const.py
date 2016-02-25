@@ -1,22 +1,23 @@
-from enum import Enum
+from enum import IntEnum
+import numpy
 
 
 __all__ = ('NaturalObjects', 'BuildingTypes', 'BotParts', 'Direction', 'NaturalMap')
 
 
-class NaturalObjects(Enum):
+class NaturalObjects(IntEnum):
     energy_source = 1
     energy_drop = 2
 
 
-class BuildingTypes(Enum):
+class BuildingTypes(IntEnum):
     cons_site = 1
     spawner = 2
     extension = 3
     radar = 4
 
 
-class BotParts(Enum):
+class BotParts(IntEnum):
     # allows gathering/transporting energy, building structures
     # each part of this type increases gathering/building per tact, transporting capacity remains fixed though
     worker = 1
@@ -43,7 +44,7 @@ class BotParts(Enum):
     life = 8
 
 
-class Direction(Enum):
+class Direction(IntEnum):
     north = 1
     north_east = 2
     east = 3
@@ -63,7 +64,7 @@ class Direction(Enum):
     up_left = 8
 
 
-class NaturalMap(Enum):
+class NaturalMap(IntEnum):
     unknown = 0  # or invisible
     ground = 1
     natural_wall = 2
@@ -74,3 +75,14 @@ class NaturalMap(Enum):
 class WorldSize:
     cell = 64
     corner_wall = 3
+
+
+class Filenames:
+    worldmap = 'world.npy'
+    wallroad = 'wallroad.npy'
+    pickled = 'data.pickle'
+
+
+class DTypes:
+    worldmap = numpy.uint8
+    wallroad = numpy.uint32

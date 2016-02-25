@@ -3,7 +3,7 @@ import random
 from math import sqrt
 import itertools
 
-from common.const import Direction, WorldSize
+from common.const import Direction, WorldSize, NaturalMap, DTypes
 
 
 def range_intersect(a1, b1, a2, b2):
@@ -30,10 +30,10 @@ def ensure_range(value, a, b):
 
 
 def build_wall(cell):
-    cell[:, 0] = 1
-    cell[WorldSize.cell - 1, :] = 1
-    cell[:, WorldSize.cell - 1] = 1
-    cell[0, :] = 1
+    cell[:, 0] = NaturalMap.natural_wall
+    cell[WorldSize.cell - 1, :] = NaturalMap.natural_wall
+    cell[:, WorldSize.cell - 1] = NaturalMap.natural_wall
+    cell[0, :] = NaturalMap.natural_wall
 
 
 def make_random_exits(only_sides=None):
@@ -55,20 +55,20 @@ def make_random_exits(only_sides=None):
 def apply_exits(cell, exits):
     for side, a, b in exits:
         if side == Direction.north:
-            cell[a:b, 0] = 0
+            cell[a:b, 0] = NaturalMap.ground
         elif side == Direction.east:
-            cell[WorldSize.cell - 1, a:b] = 0
+            cell[WorldSize.cell - 1, a:b] = NaturalMap.ground
         elif side == Direction.south:
-            cell[a:b, WorldSize.cell - 1] = 0
+            cell[a:b, WorldSize.cell - 1] = NaturalMap.ground
         else:
-            cell[0, a:b] = 0
+            cell[0, a:b] = NaturalMap.ground
 
 
 def find_exits(row):
-    changes = numpy.where(numpy.diff(row & 0x1) != 0)[0]
+    changes = numpy.where(numpy.diff(row == NaturalMap.natural_wall))[0]
     r = []
     opn = None
-    if row[0] == 0:
+    if row[0] == NaturalMap.ground:
         opn = 0
     for i in changes[:]:
         if opn is None:
@@ -300,7 +300,7 @@ def remove_circle(cell, cx, cy, radius):
             dx, dy = x - cx, y - cy
             if dx * dx + dy * dy > radius2:
                 continue
-            cell[x, y] = 0
+            cell[x, y] = NaturalMap.ground
 
 
 def remove_walls_along_path(cell, a, b, a_diam, b_diam):
@@ -349,7 +349,7 @@ def debug_draw_cell(cell, roads):
 
     for y in range(WorldSize.cell):
         for x in range(WorldSize.cell):
-            if cell[x, y] == 0:
+            if cell[x, y] == NaturalMap.ground:
                 continue
             draw.rectangle((
                 x * PIX_SIZE, y * PIX_SIZE,
@@ -384,7 +384,7 @@ def debug_draw_cell(cell, roads):
 
 
 def make_cell(exits=None, exit_sides=None, _debug=False):
-    cell = numpy.ones(shape=(WorldSize.cell, WorldSize.cell), dtype=numpy.uint8)
+    cell = numpy.full((WorldSize.cell, WorldSize.cell), NaturalMap.natural_wall, dtype=DTypes.worldmap)
     build_wall(cell)
     if exits is None:
         exits = make_random_exits(only_sides=exit_sides)
