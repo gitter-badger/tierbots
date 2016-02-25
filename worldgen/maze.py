@@ -97,24 +97,24 @@ def genmaze_eller(cellcount, heightcount):
 def debug_draw_maze(maze):
     from PIL import Image, ImageDraw
 
-    CELL_SIZE = 20
+    WorldSize.cell = 20
     w, h = maze['width'], maze['height']
-    img = Image.new('RGB', (w * CELL_SIZE, h * CELL_SIZE))
+    img = Image.new('RGB', (w * WorldSize.cell, h * WorldSize.cell))
     draw = ImageDraw.Draw(img)
-    draw.rectangle((0, 0, w * CELL_SIZE - 1, h * CELL_SIZE - 1), fill=(0, 0, 0))
+    draw.rectangle((0, 0, w * WorldSize.cell - 1, h * WorldSize.cell - 1), fill=(0, 0, 0))
     for y in range(h):
         for x in range(w - 1):
             if maze['rwalls'][x, y]:
                 draw.line((
-                    x * CELL_SIZE + CELL_SIZE, y * CELL_SIZE,
-                    x * CELL_SIZE + CELL_SIZE, y * CELL_SIZE + CELL_SIZE
+                    x * WorldSize.cell + WorldSize.cell, y * WorldSize.cell,
+                    x * WorldSize.cell + WorldSize.cell, y * WorldSize.cell + WorldSize.cell
                 ), fill=(255, 255, 255))
     for y in range(h - 1):
         for x in range(w):
             if maze['bwalls'][x, y]:
                 draw.line((
-                    x * CELL_SIZE, y * CELL_SIZE + CELL_SIZE,
-                    x * CELL_SIZE + CELL_SIZE, y * CELL_SIZE + CELL_SIZE
+                    x * WorldSize.cell, y * WorldSize.cell + WorldSize.cell,
+                    x * WorldSize.cell + WorldSize.cell, y * WorldSize.cell + WorldSize.cell
                 ), fill=(255, 255, 255))
     img.show()
 

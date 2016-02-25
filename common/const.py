@@ -6,6 +6,7 @@ __all__ = ('NaturalObjects', 'BuildingTypes', 'BotParts', 'Direction', 'NaturalM
 
 class NaturalObjects(Enum):
     energy_source = 1
+    energy_drop = 2
 
 
 class BuildingTypes(Enum):
@@ -68,3 +69,8 @@ class NaturalMap(Enum):
     natural_wall = 2
     artifical_wall = 3
     road = 4
+
+
+class WorldSize:
+    cell = 64
+    corner_wall = 3

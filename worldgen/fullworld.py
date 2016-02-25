@@ -1,7 +1,8 @@
 from .maze import genmaze_eller
 from random import random
 from .cellgen import make_cell, make_random_exits
-from .const import *
+
+from common.const import Direction, WorldSize
 
 
 def raze_maze_walls(maze, prob=0.5):
@@ -35,40 +36,44 @@ def make_full_world(width, height):
 
             sds = []
             if not right:
-                sds.append(EAST)
+                sds.append(Direction.east)
             if not bottom:
-                sds.append(SOUTH)
+                sds.append(Direction.south)
 
             exits.extend(make_random_exits(only_sides=tuple(sds)))
 
-            right_exit = [(WEST, a, b) for side, a, b in exits if side == EAST]
-            bottom_exits[x] = [(NORTH, a, b) for side, a, b in exits if side == SOUTH]
+            right_exit = [(Direction.west, a, b) for side, a, b in exits if side == Direction.east]
+            bottom_exits[x] = [(Direction.north, a, b) for side, a, b in exits if side == Direction.south]
 
             cells[(x, y)] = make_cell(exits=exits)
         print('{}%'.format(y * 100 // height))
 
-    out = Image.new('RGB', (CELL_SIZE * width, CELL_SIZE * height))
+    out = Image.new('RGB', (WorldSize.cell * width, WorldSize.cell * height))
     draw = ImageDraw.Draw(out)
     draw.rectangle((
         0, 0,
-        CELL_SIZE * width, CELL_SIZE * height,
+        WorldSize.cell * width, WorldSize.cell * height,
     ), fill=(255, 255, 255))
 
     for y in range(height):
-        draw.line((0, y * CELL_SIZE, width * CELL_SIZE, y * CELL_SIZE), fill=(200, 255, 200))
+        draw.line((0, y * WorldSize.cell, width * WorldSize.cell, y * WorldSize.cell), fill=(200, 255, 200))
     for x in range(width):
-        draw.line((x * CELL_SIZE, 0, x * CELL_SIZE, height * CELL_SIZE), fill=(200, 255, 200))
+        draw.line((x * WorldSize.cell, 0, x * WorldSize.cell, height * WorldSize.cell), fill=(200, 255, 200))
 
     for y in range(height):
         for x in range(width):
             cell = cells[(x, y)]
-            for cy in range(CELL_SIZE):
-                for cx in range(CELL_SIZE):
+            for cy in range(WorldSize.cell):
+                for cx in range(WorldSize.cell):
                     if not cell[cx, cy]:
                         continue
                     out.putpixel((
-                        x * CELL_SIZE + cx,
-                        y * CELL_SIZE + cy,
+                        x * WorldSize.cell + cx,
+                        y * WorldSize.cell + cy,
                     ), (0, 0, 0))
 
     out.show()
+
+
+if __name__ == '__main__':
+    make_full_world(16, 16)

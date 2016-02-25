@@ -2,7 +2,8 @@ import numpy
 import random
 from math import sqrt
 import itertools
-from .const import *
+
+from common.const import Direction, WorldSize
 
 
 def range_intersect(a1, b1, a2, b2):
@@ -30,35 +31,35 @@ def ensure_range(value, a, b):
 
 def build_wall(cell):
     cell[:, 0] = 1
-    cell[CELL_SIZE - 1, :] = 1
-    cell[:, CELL_SIZE - 1] = 1
+    cell[WorldSize.cell - 1, :] = 1
+    cell[:, WorldSize.cell - 1] = 1
     cell[0, :] = 1
 
 
 def make_random_exits(only_sides=None):
     r = []
-    sch = (NORTH, EAST, SOUTH, WEST) if only_sides is None else only_sides
+    sch = (Direction.north, Direction.east, Direction.south, Direction.west) if only_sides is None else only_sides
     for i in range(0, random.randint(len(sch), len(sch) * 3)):
         if i < len(sch):
             side = sch[i]
         else:
             side = random.choice(sch)
-        leng = random.randint(3, CELL_SIZE)
-        mid = random.randint(CORNER_WALL, CELL_SIZE - CORNER_WALL - 1)
+        leng = random.randint(3, WorldSize.cell)
+        mid = random.randint(WorldSize.corner_wall, WorldSize.cell - WorldSize.corner_wall - 1)
         mid -= leng // 2
-        a, b = range_intersect(mid, mid + leng, CORNER_WALL, CELL_SIZE - CORNER_WALL)
+        a, b = range_intersect(mid, mid + leng, WorldSize.corner_wall, WorldSize.cell - WorldSize.corner_wall)
         r.append((side, a, b))
     return r
 
 
 def apply_exits(cell, exits):
     for side, a, b in exits:
-        if side == NORTH:
+        if side == Direction.north:
             cell[a:b, 0] = 0
-        elif side == EAST:
-            cell[CELL_SIZE - 1, a:b] = 0
-        elif side == SOUTH:
-            cell[a:b, CELL_SIZE - 1] = 0
+        elif side == Direction.east:
+            cell[WorldSize.cell - 1, a:b] = 0
+        elif side == Direction.south:
+            cell[a:b, WorldSize.cell - 1] = 0
         else:
             cell[0, a:b] = 0
 
@@ -76,7 +77,7 @@ def find_exits(row):
             r.append((opn, i + 1))
             opn = None
     if opn is not None:
-        r.append((opn, CELL_SIZE))
+        r.append((opn, WorldSize.cell))
     return r
 
 
@@ -87,18 +88,18 @@ def point_dist(a, b):
 
 def build_road_graph(cell):
     exits = []
-    exits.extend((NORTH, a, b) for a, b in find_exits(cell[:, 0]))
-    exits.extend((EAST, a, b) for a, b in find_exits(cell[CELL_SIZE - 1, :]))
-    exits.extend((SOUTH, a, b) for a, b in find_exits(cell[:, CELL_SIZE - 1]))
-    exits.extend((WEST, a, b) for a, b in find_exits(cell[0, :]))
+    exits.extend((Direction.north, a, b) for a, b in find_exits(cell[:, 0]))
+    exits.extend((Direction.east, a, b) for a, b in find_exits(cell[WorldSize.cell - 1, :]))
+    exits.extend((Direction.south, a, b) for a, b in find_exits(cell[:, WorldSize.cell - 1]))
+    exits.extend((Direction.west, a, b) for a, b in find_exits(cell[0, :]))
 
     def make_side_point(side, x):
-        if side == NORTH:
+        if side == Direction.north:
             return (x, 0)
-        elif side == EAST:
-            return (CELL_SIZE - 1, x)
-        elif side == SOUTH:
-            return (x, CELL_SIZE - 1)
+        elif side == Direction.east:
+            return (WorldSize.cell - 1, x)
+        elif side == Direction.south:
+            return (x, WorldSize.cell - 1)
         else:
             return (0, x)
 
@@ -213,13 +214,13 @@ def build_road_graph(cell):
             base, end, size = e[1] + 2, e[2] - 2, 3
         for i in range(base, end, 5):
             ppos = make_side_point(e[0], i)
-            pid = add_point(ppos[0], ppos[1], fixed=True, size=size)
+            add_point(ppos[0], ppos[1], fixed=True, size=size)
 
     # add random nonfixed points
     not_fixed_ids = set()
     for change_i in range(random.randint(8, 30)):
-        x = random.randint(CORNER_WALL, CELL_SIZE - CORNER_WALL - 1)
-        y = random.randint(CORNER_WALL, CELL_SIZE - CORNER_WALL - 1)
+        x = random.randint(WorldSize.corner_wall, WorldSize.cell - WorldSize.corner_wall - 1)
+        y = random.randint(WorldSize.corner_wall, WorldSize.cell - WorldSize.corner_wall - 1)
         not_fixed_ids.add(add_point(x, y))
 
     # connect all points to nearest
@@ -269,15 +270,21 @@ def build_road_graph(cell):
                 continue
             dist = point_dist(ap['xy'], bp['xy'])
             # continue
-            if dist < CELL_SIZE / 6:
+            if dist < WorldSize.cell / 6:
                 continue
             midx = split_chord(aidx, bidx)
             mp = points[midx]
             old_xy = mp['xy']
             k = round(dist / 2.5)
             mp['xy'] = (
-                ensure_range(old_xy[0] + random.randint(-k, k), CORNER_WALL, CELL_SIZE - CORNER_WALL - 1),
-                ensure_range(old_xy[1] + random.randint(-k, k), CORNER_WALL, CELL_SIZE - CORNER_WALL - 1),
+                ensure_range(
+                    old_xy[0] + random.randint(-k, k), WorldSize.corner_wall,
+                    WorldSize.cell - WorldSize.corner_wall - 1
+                ),
+                ensure_range(
+                    old_xy[1] + random.randint(-k, k), WorldSize.corner_wall,
+                    WorldSize.cell - WorldSize.corner_wall - 1
+                ),
             )
             mp['size'] = (ap['size'] + bp['size']) // 2
 
@@ -286,8 +293,8 @@ def build_road_graph(cell):
 
 def remove_circle(cell, cx, cy, radius):
     radius2 = radius * radius
-    xa, xb = range_intersect(1, CELL_SIZE - 1, cx - radius, cx + radius + 1)
-    ya, yb = range_intersect(1, CELL_SIZE - 1, cy - radius, cy + radius + 1)
+    xa, xb = range_intersect(1, WorldSize.cell - 1, cx - radius, cx + radius + 1)
+    ya, yb = range_intersect(1, WorldSize.cell - 1, cy - radius, cy + radius + 1)
     for x in range(xa, xb):
         for y in range(ya, yb):
             dx, dy = x - cx, y - cy
@@ -333,15 +340,15 @@ def debug_draw_cell(cell, roads):
     from PIL import Image, ImageDraw
 
     PIX_SIZE = 12
-    out = Image.new('RGB', (CELL_SIZE * PIX_SIZE, CELL_SIZE * PIX_SIZE))
+    out = Image.new('RGB', (WorldSize.cell * PIX_SIZE, WorldSize.cell * PIX_SIZE))
     draw = ImageDraw.Draw(out)
     draw.rectangle((
         0, 0,
-        CELL_SIZE * PIX_SIZE, CELL_SIZE * PIX_SIZE,
+        WorldSize.cell * PIX_SIZE, WorldSize.cell * PIX_SIZE,
     ), fill=(255, 255, 255))
 
-    for y in range(CELL_SIZE):
-        for x in range(CELL_SIZE):
+    for y in range(WorldSize.cell):
+        for x in range(WorldSize.cell):
             if cell[x, y] == 0:
                 continue
             draw.rectangle((
@@ -371,13 +378,13 @@ def debug_draw_cell(cell, roads):
         ), fill=(0, 128, 0), outline=(128, 128, 128))
     for i, ptA in enumerate(roads):
         x, y = ptA['xy']
-        draw.text((x * PIX_SIZE, y * PIX_SIZE), str(i), fill=(0,0,0))
+        draw.text((x * PIX_SIZE, y * PIX_SIZE), str(i), fill=(0, 0, 0))
 
     out.show()
 
 
 def make_cell(exits=None, exit_sides=None, _debug=False):
-    cell = numpy.ones(shape=(CELL_SIZE, CELL_SIZE), dtype=numpy.uint8)
+    cell = numpy.ones(shape=(WorldSize.cell, WorldSize.cell), dtype=numpy.uint8)
     build_wall(cell)
     if exits is None:
         exits = make_random_exits(only_sides=exit_sides)
