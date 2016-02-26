@@ -384,7 +384,7 @@ def debug_draw_cell(cell, roads):
 
 
 def make_cell(exits=None, exit_sides=None, _debug=False):
-    cell = numpy.full((WorldSize.cell, WorldSize.cell), NaturalMap.natural_wall, dtype=DTypes.worldmap)
+    cell = numpy.full((WorldSize.cell, WorldSize.cell), NaturalMap.natural_wall, dtype=DTypes.naturalmap)
     build_wall(cell)
     if exits is None:
         exits = make_random_exits(only_sides=exit_sides)

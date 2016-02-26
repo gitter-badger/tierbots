@@ -85,7 +85,7 @@ def setup_sources(cells):
 
 
 def glue_parts_together(cells, cell_width, cell_height):
-    output = numpy.empty((WorldSize.cell * cell_width, WorldSize.cell * cell_height), dtype=DTypes.worldmap)
+    output = numpy.empty((WorldSize.cell * cell_width, WorldSize.cell * cell_height), dtype=DTypes.naturalmap)
     for xy, cell in cells.items():
         ox, oy = xy[0] * WorldSize.cell, xy[1] * WorldSize.cell
         output[ox:ox + WorldSize.cell, oy:oy + WorldSize.cell] = cell
