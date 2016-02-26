@@ -22,6 +22,17 @@ from ..const import NaturalMap, Filenames, DTypes, Entities, EntityTypes, Direct
 from ..decay import param_by_zerotime, zerotime_by_param_change
 
 
+# TODO: limit checking for all uint32 values
+# TODO: try avoiding floating point operations in decay module
+# TODO: replace dict (x,y)->entity mapping with numpy array (entity keys are uint32)
+#       this will require some logic to handle energy sources (since they are on walls)
+# TODO: create StateValidationError with descriptive messages instead simply returning False
+# TODO: try another design: return for every (x,y) list of object in this cell (walls, roads, bots, etc, all at once)
+# TODO: probably this state class could be reusable for client, so it needs facility to extend world
+# TODO: try reducing size of ground_index, use uint16 indexing and chunks
+#       probably best chunk size here is 256x256
+
+
 class ServerState:
     @classmethod
     def load(cls, foldername):
@@ -246,6 +257,9 @@ class ServerState:
         self.drop_ext_times[gi] = zerotime_by_param_change(
             self.time, self.drop_ext_times[gi], Entities.drop_decay, delta_energy
         )
+
+    def increment_time(self):
+        self.time += 1
 
     def place_new_player_base(self, nickname, token):
         # must be invoked on first player's connection, not registration
