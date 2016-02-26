@@ -1,7 +1,7 @@
 from typing import Iterable, TypeVar
 import numpy
 
-from common.const import NaturalObjects, BuildingTypes, BotParts, Direction
+from ..const import NaturalObjects, BuildingTypes, BotParts, Direction
 
 
 class Positionable:

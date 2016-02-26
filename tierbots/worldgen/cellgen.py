@@ -3,7 +3,7 @@ import random
 from math import sqrt
 import itertools
 
-from common.const import Direction, WorldSize, NaturalMap, DTypes
+from ..const import Direction, WorldSize, NaturalMap, DTypes
 
 
 def range_intersect(a1, b1, a2, b2):

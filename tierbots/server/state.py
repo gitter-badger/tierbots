@@ -18,8 +18,8 @@ import numpy
 import pickle
 from random import getrandbits
 
-from common.const import NaturalMap, Filenames, DTypes, Entities, EntityTypes, Direction
-from common.decay import param_by_zerotime, zerotime_by_param_change
+from ..const import NaturalMap, Filenames, DTypes, Entities, EntityTypes, Direction
+from ..decay import param_by_zerotime, zerotime_by_param_change
 
 
 class ServerState:
@@ -64,7 +64,7 @@ class ServerState:
         else:
             mkdir(foldername)
 
-        from worldgen import generate_world
+        from ..worldgen import generate_world
 
         o = cls(foldername)
         o.naturalmap, sources = generate_world(width, height)

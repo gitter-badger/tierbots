@@ -1,9 +1,9 @@
-from .maze import genmaze_eller
 from random import random, sample, randrange
-from .cellgen import make_cell, make_random_exits
 import numpy
 
-from common.const import Direction, WorldSize, NaturalMap, DTypes
+from .maze import genmaze_eller
+from .cellgen import make_cell, make_random_exits
+from ..const import Direction, WorldSize, NaturalMap, DTypes
 
 
 def raze_maze_walls(maze, prob=0.5):
