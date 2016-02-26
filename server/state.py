@@ -11,7 +11,6 @@ Full state data must be loaded by server into RAM, so we don't need any SQL solu
 
 Tick counter starts from 0 on each server restart. DON'T save any timestamps into files,
 instead calculate current values.
-
 '''
 from os.path import join, isdir
 from os import mkdir, listdir
@@ -24,16 +23,6 @@ from common.decay import param_by_zerotime, zerotime_by_param_change
 
 
 class ServerState:
-    '''
-    size: (int, int)
-    maxplayers: int
-    naturalmap: numpy.array
-    wallroad: numpy.array
-    entities: {int: obj}
-    players: {str: obj}
-    time: int
-    '''
-
     @classmethod
     def load(cls, foldername):
         assert isdir(foldername), 'Trying to load non-existent directory'
@@ -120,39 +109,72 @@ class ServerState:
                 return k
 
     def _check_xy(self, x, y):
-        if x < 0 or y < 0 or x >= self.naturalmap.shape[0] or y >= self.naturalmap.shape[1]:
-            raise IndexError
-
-    def move_entity(self, eid, dirc):
-        # Doesn't check any constraints!
-        e = self.entities[eid]
-        dx, dy = Direction.offset(dirc)
-        nx, ny = e['x'] + dx, e['y'] + dy
-        self._check_xy(nx, ny)
-        del self._ent_map[(e['x'], e['y'])]
-        e['x'], e['y'] = nx, ny
-        k = (nx, ny)
-        assert k not in self._ent_map  # avoid overwriting any entity
-        self._ent_map[k] = eid
+        return x >= 0 and y >= 0 and x < self.naturalmap.shape[0] and y < self.naturalmap.shape[1]
 
     def place_new_entity(self, edata, x, y):
-        self._check_xy(x, y)
-        edata['x'], edata['y'] = x, y
+        '''
+        Returns None if placing isn't possible. ID otherwise.
+        '''
         k = (x, y)
-        assert k not in self._ent_map  # avoid overwriting any entity
+        if not self._check_xy(x, y) or k in self._ent_map:
+            return None
+        edata['x'], edata['y'] = k
         eid = self._allocate_entity_id()
         self.entities[eid] = edata
         self._ent_map[k] = eid
         return eid
 
+    def get_entity(self, x, y):
+        '''
+        Returns entity ID if entity exists there. None otherwise.
+        '''
+        return self._ent_map.get((x, y))
+
+    def get_entity_by_id(self, eid):
+        '''
+        ID must be valid.
+        Returns copied dict instance.
+        '''
+        return self.entities[eid].copy()
+
+    def change_entity_prop(self, eid, key, value):
+        '''
+        ID must be valid.
+        Don't attempt to change position.
+        '''
+        assert key != 'x' and key != 'y'
+        self.entities[eid][key] = value
+
+    def move_entity(self, eid, dirc):
+        '''
+        ID must be valid.
+        Returns bool if success. Checks if there is other entity, but doesn't check walls.
+        '''
+        e = self.entities[eid]
+        dx, dy = Direction.offset(dirc)
+        k = e['x'] + dx, e['y'] + dy
+        if not self._check_xy(*k) or k in self._ent_map:
+            return False
+        del self._ent_map[(e['x'], e['y'])]  # removing old link
+        e['x'], e['y'] = k
+        self._ent_map[k] = eid
+        return True
+
     def remove_entity(self, eid):
+        '''
+        ID must be valid.
+        '''
         e = self.entities[eid]
         del self._ent_map[(e['x'], e['y'])]
         del self.entities[eid]
 
     def get_natural(self, x, y):
-        self._check_xy(x, y)
-        v, hp = self.naturalmap[x, y], 0
+        '''
+        Returns type of NaturalMap object along with HP (None if object doesn't support HP).
+        '''
+        if not self._check_xy(x, y):
+            return NaturalMap.natural_wall, None
+        v, hp = self.naturalmap[x, y], None
         if v == NaturalMap.artifical_wall or v == NaturalMap.road:
             death_time = self.wall_road_ext_times[self.ground_index[x, y]]
             if self.time >= death_time:
@@ -165,11 +187,18 @@ class ServerState:
                 )
         return v, hp
 
-    def change_natural(self, x, y, delta_hp):
-        self._check_xy(x, y)
+    def change_natural_hp(self, x, y, delta_hp):
+        '''
+        Applies HP delta to NaturalMap object.
+        Silently skips action on wrong conditions.
+        Can also remove object.
+        Returns bool of success.
+        '''
+        if not self._check_xy(x, y):
+            return False
         v = self.naturalmap[x, y]
         if v != NaturalMap.artifical_wall and v != NaturalMap.road:
-            return
+            return False
         gi = self.ground_index[x, y]
         new_death_time = zerotime_by_param_change(
             self.time, self.wall_road_ext_times[gi],
@@ -178,14 +207,45 @@ class ServerState:
         )
         if new_death_time <= self.time:
             self.naturalmap[x, y] = NaturalMap.ground
+        return True
+
+    def set_natural_type(self, x, y, otype, hp):
+        '''
+        Creates (replaces) NaturalMap object with initial HP.
+        Can't replace natural walls.
+        Returns bool of success.
+        '''
+        if otype not in (NaturalMap.artifical_wall, NaturalMap.road):
+            return False
+        if hp <= 0 or not self._check_xy(x, y):
+            return False
+        v = self.naturalmap[x, y]
+        if v == NaturalMap.natural_wall:
+            return False
+        self.naturalmap[x, y] = otype
+        self.wall_road_ext_times[self.ground_index[x, y]] = zerotime_by_param_change(
+            self.time, self.time,
+            Entities.wall_decay if otype == NaturalMap.artifical_wall else Entities.road_decay,
+            hp
+        )
+        return True
 
     def get_energy_drop(self, x, y):
-        self._check_xy(x, y)
+        '''
+        Returns energy of drop. None means energy drop doesn't exist.
+        '''
+        if not self._check_xy(x, y):
+            return None
         death_time = self.drop_ext_times[self.ground_index[x, y]]
-        return param_by_zerotime(self.time, death_time, Entities.drop_decay)
+        val = param_by_zerotime(self.time, death_time, Entities.drop_decay)
+        return val if val > 0 else None
 
     def change_energy_drop(self, x, y, delta_energy):
-        self._check_xy(x, y)
+        '''
+        Changes energy drop by amount of energy. Can also create or remove drop.
+        '''
+        if not self._check_xy(x, y):
+            return
         gi = self.ground_index[x, y]
         self.drop_ext_times[gi] = zerotime_by_param_change(
             self.time, self.drop_ext_times[gi], Entities.drop_decay, delta_energy
