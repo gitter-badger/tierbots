@@ -27,25 +27,23 @@ class ServerState:
     def load(cls, foldername):
         assert isdir(foldername), 'Trying to load non-existent directory'
         o = cls(foldername)
-        o.naturalmap = numpy.load(o._get_filename(Filenames.naturalmap), allow_pickle=False)
-        o.wallroad = numpy.load(o._get_filename(Filenames.wallroad), allow_pickle=False)
+        for a in ('naturalmap', 'ground_index', 'wall_road_ext_times', 'drop_ext_times'):
+            setattr(o, a, numpy.load(o._get_filename(getattr(Filenames, a)), allow_pickle=False))
         with open(o._get_filename(Filenames.pickled), 'rb') as f:
             data = pickle.load(f)
-        for k, v in data.items():
-            setattr(o, k, v)
+            for k, v in data.items():
+                setattr(o, k, v)
         return o
 
     def save(self):
-        numpy.save(self._get_filename(Filenames.naturalmap), self.naturalmap, allow_pickle=False)
-        numpy.save(self._get_filename(Filenames.wallroad), self.wallroad, allow_pickle=False)
+        for a in ('naturalmap', 'ground_index', 'wall_road_ext_times', 'drop_ext_times'):
+            numpy.save(self._get_filename(getattr(Filenames, a)), getattr(self, a), allow_pickle=False)
         with open(self._get_filename(Filenames.pickled), 'wb') as f:
-            pickle.dump(f, {k: getattr(self, k) for k in (
-                'size',
-                'maxplayers',
+            pickle.dump({k: getattr(self, k) for k in (
+                'players',
                 'time',
                 'entities',
-                'players',
-            )})
+            )}, f)
 
     @staticmethod
     def _build_ground_index(naturalmap):
@@ -77,11 +75,10 @@ class ServerState:
         maxplayers = len(sources) // 4
         o.players = [None for i in range(maxplayers)]
         o.time = 0
-
         o.entities = {}
         for source in sources:
             o.entities[o._allocate_entity_id()] = {
-                'type': EntityTypes.source,
+                'type': int(EntityTypes.source),
                 'x': source[0],
                 'y': source[1],
                 'energy': Entities.source_max_energy,
@@ -89,17 +86,16 @@ class ServerState:
 
         o._build_caches()
         o.save()
-
         return o
 
     def __init__(self, foldername):
         self.foldername = foldername
 
     def _get_filename(self, en):
-        return join(self.foldername, en.value)
+        return join(self.foldername, en)
 
     def _build_caches(self):
-        self._ent_map = {(e.x, e.y): k for k, e in self.entities.items()}
+        self._ent_map = {(e['x'], e['y']): k for k, e in self.entities.items()}
 
     def _allocate_entity_id(self):
         while True:

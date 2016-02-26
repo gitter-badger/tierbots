@@ -145,7 +145,9 @@ class WorldSize:
 
 class Filenames:
     naturalmap = 'naturalmap.npy'
-    wallroad = 'wallroad.npy'
+    ground_index = 'gindex.npy'
+    wall_road_ext_times = 'wallroad.npy'
+    drop_ext_times = 'drops.npy'
     pickled = 'data.pickle'
 
 
